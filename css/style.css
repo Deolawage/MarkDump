@@ -384,22 +384,17 @@ input {
     height: 36px;
     border: 0;
     border-radius: 50%;
-    background: var(--surface);
+    background: var(--transparent);
     cursor: pointer;
-
+    color: #111;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease;
 }
 
 
-.wishlist-btn:hover {
-    background: var(--dark);
-    transform: scale(1.05);
+.wishlist-btn.is-wishlisted {
+    color: red;
 }
 
 .wishlist-btn img {
@@ -538,8 +533,8 @@ input {
 .form-group input,
 .form-group textarea,
 .form-group select {
-    width: 100%;
     padding: 12px 14px;
+    width: 100%;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--surface);

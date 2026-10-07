@@ -59,6 +59,38 @@ const ProductStore = (() => {
 })();
 
 
+const WishlistStore = (()=>{
+
+    let wishlist = [];
+
+    function addProduct(productId) {
+        wishlist.push(productId);
+    }
+
+    function removeProduct(productId) {
+        wishlist = wishlist.filter((id) => id !== productId);
+    }
+
+    function isInWishlist(productId) {
+        return wishlist.includes(productId);
+    }
+    
+
+
+
+    function getWishlist() {
+        return wishlist;
+    }
+
+    return{
+        addProduct,
+        removeProduct,
+        isInWishlist,
+        getWishlist
+    }
+    
+})();
+
 
 
 // Sell input form
@@ -210,11 +242,11 @@ const productGrid = document.querySelector(".product-grid");
 const DisplayController = (() => {
 
     function renderProducts(products = productManager.getProducts()) {
-
+                                   
         productGrid.replaceChildren();
 
         products.forEach((product) => {
-
+ 
             const productCard = document.createElement("div");
             productCard.classList.add("product-card");
 
@@ -232,11 +264,56 @@ const DisplayController = (() => {
             wishlistButton.classList.add("wishlist-btn");
             wishlistButton.setAttribute("aria-label", "Add to wishlist");
 
-            const heartIcon = document.createElement("img");
-            heartIcon.src = "assets/Icons/heart.svg";
-            heartIcon.alt = "";
+           if (WishlistStore.isInWishlist(product.id)) {
+    wishlistButton.classList.add("is-wishlisted");
+}
+
+
+
+           const heartIcon = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "svg"
+);
+
+heartIcon.setAttribute("viewBox", "0 0 24 24");
+heartIcon.setAttribute("width", "24");
+heartIcon.setAttribute("height", "24");
+heartIcon.setAttribute("fill", "none");
+heartIcon.setAttribute("stroke", "currentColor");
+heartIcon.setAttribute("stroke-width", "2");
+heartIcon.setAttribute("stroke-linecap", "round");
+heartIcon.setAttribute("stroke-linejoin", "round");
+
+const heartPath = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "path"
+);
+
+heartPath.setAttribute(
+    "d",
+    "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+);
+
+heartIcon.appendChild(heartPath);
 
             wishlistButton.appendChild(heartIcon);
+         wishlistButton.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+             if (WishlistStore.isInWishlist(product.id)) {
+        WishlistStore.removeProduct(product.id);
+    } else {
+        WishlistStore.addProduct(product.id);
+    }
+
+     wishlistButton.classList.toggle(
+    "is-wishlisted",
+    WishlistStore.isInWishlist(product.id)
+);
+     console.log(WishlistStore.getWishlist());
+         });
+        
+
             productImage.appendChild(image);
             productImage.appendChild(wishlistButton);
 
@@ -348,6 +425,12 @@ productDetailModal.style.display = "flex";
     closeButton.addEventListener("click", () => {
         productDetailModal.style.display = "none";
     });
+
+    productDetailModal.addEventListener("click", (e) => {
+    if (e.target === productDetailModal) {
+        productDetailModal.style.display = "none";
+    }
+});
 
 })();
 
