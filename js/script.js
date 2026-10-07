@@ -218,6 +218,7 @@ const DisplayController = (() => {
             const productCard = document.createElement("div");
             productCard.classList.add("product-card");
 
+
             productCard.dataset.productId = product.id;
 
             const productImage = document.createElement("div");
@@ -280,6 +281,7 @@ const ProductDetailController = (() => {
     const productGrid = document.querySelector(".product-grid");
     const productDetailModal = document.getElementById("product-detail-modal");
     const closeButton = document.querySelector(".product-detail-modal-close");
+    const productDetailContent = document.querySelector(".product-detail-content");
 
     productGrid.addEventListener("click", (e) => {
 
@@ -289,13 +291,58 @@ const ProductDetailController = (() => {
             return;
         }
 
-        const productId = productCard.dataset.productId;
+        const productId = productCard.getAttribute("data-product-id");
+
+        console.log("Product ID:", productId);
 
         const product = productManager.getProductById(productId);
+        console.log("Product:", product);
 
-        console.log(product);
+productDetailContent.replaceChildren();
 
-        productDetailModal.style.display = "flex";
+const productName = document.createElement("h2");
+productName.textContent = product.name;
+
+productDetailContent.appendChild(productName);
+
+
+const productDescription = document.createElement("p");
+productDescription.textContent = product.description;
+productDetailContent.appendChild(productDescription);
+
+
+const productPrice =document.createElement("p");
+productPrice.textContent = `₦${product.price.toLocaleString()}`;
+productDetailContent.appendChild(productPrice);
+
+
+const productImage = document.createElement("img");
+productImage.src = product.images[0];
+productImage.alt = product.name;
+productDetailContent.appendChild(productImage);
+
+
+const productCategory = document.createElement("p");
+productCategory.textContent = product.category;
+productDetailContent.appendChild(productCategory);
+
+
+const productSeller = document.createElement("p");
+productSeller.textContent = product.seller ?? "Seller information unavailable";
+productDetailContent.appendChild(productSeller);
+
+
+
+const productLocation = document.createElement("p");
+productLocation.textContent = `Location: ${product.location}`;
+productDetailContent.appendChild(productLocation);
+
+const productQuantity = document.createElement("p");
+productQuantity.textContent = `Quantity: ${product.quantity}`;
+productDetailContent.appendChild(productQuantity);
+
+productDetailModal.style.display = "flex";
+
     });
 
     closeButton.addEventListener("click", () => {
