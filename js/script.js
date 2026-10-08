@@ -35,6 +35,13 @@ class ProductManager {
         .getProducts()
         .find((product) => product.id === productId);
     }
+
+    searchProducts(searchTerm) {
+        return ProductStore
+        .getProducts()
+        .filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    }
 }
 
 
@@ -352,6 +359,30 @@ heartIcon.appendChild(heartPath);
     };
 
 })();
+
+const SearchController = (() => {
+    const searchForm = document.querySelector(".search-bar");
+    const searchInput = searchForm.querySelector("input");
+
+    searchForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const SearchTerm = searchInput.value.trim();
+
+        if ( SearchTerm === "") {
+            DisplayController.renderProducts();
+            return;
+        }
+
+        const searchResults = productManager.searchProducts(SearchTerm);
+
+        DisplayController.renderProducts(searchResults);
+    });
+})();
+
+
+
+
 
 const ProductDetailController = (() => {
 
