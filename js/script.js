@@ -99,6 +99,36 @@ const WishlistStore = (()=>{
 })();
 
 
+const CartStore = (() => {
+
+    let cart = [];
+
+    function addProduct(productId) {
+        cart.push(productId);
+    }
+
+    function removeProduct(productId) {
+        cart = cart.filter((id) => id !== productId);
+    }
+
+    function getCart() {
+        return cart;
+    }
+
+    function isInCart(productId){
+     return cart.includes(productId);
+    }
+
+    return{
+        addProduct,
+        removeProduct,
+        getCart,
+        isInCart
+    };
+    
+})();
+
+
 
 // Sell input form
 
@@ -249,13 +279,13 @@ const productGrid = document.querySelector(".product-grid");
 const DisplayController = (() => {
 
     function renderProducts(products = productManager.getProducts()) {
-                                   
         productGrid.replaceChildren();
 
         products.forEach((product) => {
  
             const productCard = document.createElement("div");
             productCard.classList.add("product-card");
+        
 
 
             productCard.dataset.productId = product.id;
@@ -448,6 +478,29 @@ productDetailContent.appendChild(productLocation);
 const productQuantity = document.createElement("p");
 productQuantity.textContent = `Quantity: ${product.quantity}`;
 productDetailContent.appendChild(productQuantity);
+
+const addToCartButton = document.createElement("button");
+addToCartButton.type = "button";
+addToCartButton.textContent = CartStore.isInCart(product.id)
+? "Added to Cart"
+: "Add to Cart";
+
+addToCartButton.classList.add("add-to-cart-btn");
+
+addToCartButton.addEventListener("click", () => {
+    if (CartStore.isInCart(product.id)) {
+        return;
+    }
+
+    CartStore.addProduct(product.id);
+    const cartCount = document.querySelector(".cart-count");
+cartCount.textContent = CartStore.getCart().length;
+
+    addToCartButton.textContent = "Added to Cart";
+});
+
+productDetailContent.appendChild(addToCartButton);
+
 
 productDetailModal.style.display = "flex";
 
