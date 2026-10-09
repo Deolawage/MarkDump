@@ -1,4 +1,8 @@
 
+const AFRIBASE_URL = "https://cxhk6b8xxxk041p1cpga.afribase.dev/rest/v1";
+const AFRIBASE_PUBLIC_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIxMDY1NzQ3NjAsImlhdCI6MTc5MTIxNDc2MCwiaXNzIjoiNWNmMjc1YmYtODhjOS00NjYwLTllMzEtMzY0ZmRhNWZhMzg4Iiwicm9sZSI6ImFub24ifQ.7VPmv7yI9F3yrNo3_UCV6adMxNmzMaxRv4rujC-BwSA";
+
+
 class Product {
     constructor(name, description, price, category, images, location, quantity) {
         this.id = crypto.randomUUID();
@@ -16,24 +20,26 @@ class Product {
 }
 
 class ProductManager {
-    addProduct(product) {
-        ProductStore.addProduct(product);
+    async addProduct(product) {
+        return await ProductStore.addProduct(product);
     }
 
     getProducts() {
         return ProductStore.getProducts();
     }
 
-    getProductsByCategory(category) {
-        return ProductStore
-        .getProducts()
-        .filter((product) => product.category === category);
+    async getProductsByCategory(category) {
+        const products = await ProductStore.getProducts();
+
+        return products.filter(
+            (product) => product.category === category);
     }
 
-    getProductById(productId) {
-        return ProductStore
-        .getProducts()
-        .find((product) => product.id === productId);
+    async getProductById(productId) {
+        const products = await ProductStore.getProducts();
+    
+       return products.find(
+        (product) => product.id === productId);
     }
 
     searchProducts(searchTerm) {
@@ -49,22 +55,62 @@ const productManager = new ProductManager();
 
 const ProductStore = (() => {
 
- let products = [];
+    async function addProduct(product) {
+        const response = await fetch(`${AFRIBASE_URL}/products`, {
+            method: "POST",
+            headers: {
+                apikey: AFRIBASE_PUBLIC_KEY,
+                Authorization: `Bearer ${AFRIBASE_PUBLIC_KEY}`,
+                "Content-Type": "application/json",
+                Prefer: "return=representation"
+            },
+            body: JSON.stringify({
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                category: product.category,
+                quantity: product.quantity,
+                images: product.images,
+                seller_name: product.seller,
+                location: product.location,
+                status: product.status
+            })
+        });
 
- function addProduct(product) {
-        products.push(product);
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(`Failed to save product: ${JSON.stringify(error)}`);
+        }
+
+        const [savedProduct] = await response.json();
+
+        return savedProduct;
     }
 
-    function getProducts(){
-        return products;
+    async function getProducts() {
+        const response = await fetch(
+            `${AFRIBASE_URL}/products?select=*&status=eq.active&order=created_at.desc`,
+            {
+                headers: {
+                    apikey: AFRIBASE_PUBLIC_KEY,
+                    Authorization: `Bearer ${AFRIBASE_PUBLIC_KEY}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch products: ${response.status}`);
+        }
+
+        return await response.json();
     }
 
     return {
         addProduct,
         getProducts
-    }
-})();
+    };
 
+})();
 
 const WishlistStore = (()=>{
 
