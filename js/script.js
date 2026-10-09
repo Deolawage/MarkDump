@@ -42,10 +42,12 @@ class ProductManager {
         (product) => product.id === productId);
     }
 
-    searchProducts(searchTerm) {
-        return ProductStore
-        .getProducts()
-        .filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    async searchProducts(searchTerm) {
+        const products =  await ProductStore.getProducts();
+    
+
+        return products.filter(
+            (product) => product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     }
 }
