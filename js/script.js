@@ -281,7 +281,7 @@ const SellController = (() => {
 
 
 
-sellForm.addEventListener("submit", (e) => {
+sellForm.addEventListener("submit", async (e) => {
 
     e.preventDefault();
 
@@ -307,11 +307,19 @@ sellForm.addEventListener("submit", (e) => {
         productQuantity
     );
 
-    productManager.addProduct(product);
+  try {
+    await productManager.addProduct(product);
 
-    DisplayController.renderProducts();
+    const products = await productManager.getProducts();
+
+    DisplayController.renderProducts(products);
 
     closeModal();
+
+} catch (error) {
+    console.error("Failed to save product:", error);
+    alert("Unable to list your product. Please try again.");
+}
 });
 
 
@@ -326,7 +334,7 @@ const productGrid = document.querySelector(".product-grid");
 
 const DisplayController = (() => {
 
-    function renderProducts(products = productManager.getProducts()) {
+    function renderProducts(products = []) {
         productGrid.replaceChildren();
 
         products.forEach((product) => {
@@ -442,22 +450,27 @@ const SearchController = (() => {
     const searchForm = document.querySelector(".search-bar");
     const searchInput = searchForm.querySelector("input");
 
-    searchForm.addEventListener("submit", (e) => {
+    searchForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const SearchTerm = searchInput.value.trim();
+        const searchTerm = searchInput.value.trim();
 
-        if ( SearchTerm === "") {
-            DisplayController.renderProducts();
-            return;
+        try {
+            let searchResults;
+
+            if (searchTerm === "") {
+                searchResults = await productManager.getProducts();
+            } else {
+                searchResults = await productManager.searchProducts(searchTerm);
+            }
+
+            DisplayController.renderProducts(searchResults);
+
+        } catch (error) {
+            console.error("Search failed:", error);
         }
-
-        const searchResults = productManager.searchProducts(SearchTerm);
-
-        DisplayController.renderProducts(searchResults);
     });
 })();
-
 
 
 
@@ -469,7 +482,7 @@ const ProductDetailController = (() => {
     const closeButton = document.querySelector(".product-detail-modal-close");
     const productDetailContent = document.querySelector(".product-detail-content");
 
-    productGrid.addEventListener("click", (e) => {
+    productGrid.addEventListener("click", async (e) => {
 
         const productCard = e.target.closest(".product-card");
 
@@ -481,8 +494,13 @@ const ProductDetailController = (() => {
 
         console.log("Product ID:", productId);
 
-        const product = productManager.getProductById(productId);
+        const product = await productManager.getProductById(productId);
         console.log("Product:", product);
+
+        if(!product){
+            console.error("Product not found:", productId);
+            return;
+        }
 
 productDetailContent.replaceChildren();
 
