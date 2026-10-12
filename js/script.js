@@ -337,8 +337,8 @@ const SellController = (() => {
 
 
 
+    sellForm.addEventListener("submit", async (e) => {
 
-sellForm.addEventListener("submit", async (e) => {
 
     e.preventDefault();
 
@@ -490,8 +490,8 @@ heartIcon.appendChild(heartPath);
             price.classList.add("product-price");
             price.textContent = `₦${product.price.toLocaleString()}`;
 
-            productInfo.appendChild(category);
             productInfo.appendChild(name);
+            productInfo.appendChild(category);
             productInfo.appendChild(seller);
             productInfo.appendChild(price);
 
@@ -699,3 +699,13 @@ const CategoryController = (() => {
 
 })();
 
+(async () =>{
+    try{
+        const products = await productManager.getProducts();
+
+        DisplayController.renderProducts(products);
+
+    } catch (error){
+        console.error("Failed to load product");
+    }
+})();
