@@ -1,7 +1,10 @@
 
 const AFRIBASE_URL = "https://cxhk6b8xxxk041p1cpga.afribase.dev/rest/v1";
 const AFRIBASE_PUBLIC_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIxMDY1NzQ3NjAsImlhdCI6MTc5MTIxNDc2MCwiaXNzIjoiNWNmMjc1YmYtODhjOS00NjYwLTllMzEtMzY0ZmRhNWZhMzg4Iiwicm9sZSI6ImFub24ifQ.7VPmv7yI9F3yrNo3_UCV6adMxNmzMaxRv4rujC-BwSA";
+const AFRIBASE_STORAGE_URL =
+    "https://cxhk6b8xxxk041p1cpga.afribase.dev/storage/v1";
 
+const STORAGE_BUCKET = "product-images";
 
 class Product {
     constructor(name, description, price, category, images, location, quantity) {
@@ -23,6 +26,10 @@ class ProductManager {
     async addProduct(product) {
         return await ProductStore.addProduct(product);
     }
+    
+   async uploadProductImages(files) {
+    return await ProductStore.uploadImages(files);
+   }
 
     getProducts() {
         return ProductStore.getProducts();
@@ -41,6 +48,7 @@ class ProductManager {
        return products.find(
         (product) => product.id === productId);
     }
+    
 
     async searchProducts(searchTerm) {
         const products =  await ProductStore.getProducts();
@@ -106,10 +114,51 @@ const ProductStore = (() => {
 
         return await response.json();
     }
+    
+    async function uploadImages(files) {
+    const uploadedImageUrls = [];
+
+    for (const file of files) {
+        const fileExtension = file.name.split(".").pop();
+        const fileName = `${crypto.randomUUID()}.${fileExtension}`;
+
+        const uploadUrl =
+            `${AFRIBASE_STORAGE_URL}/object/${STORAGE_BUCKET}/${fileName}`;
+
+        const response = await fetch(uploadUrl, {
+            method: "POST",
+            headers: {
+                apikey: AFRIBASE_PUBLIC_KEY,
+                Authorization: `Bearer ${AFRIBASE_PUBLIC_KEY}`,
+                "Content-Type": file.type
+            },
+            body: file
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+
+            throw new Error(
+                `Image upload failed: ${response.status} ${error}`
+            );
+        }
+
+        const publicUrl =
+            `${AFRIBASE_STORAGE_URL}/object/public/${STORAGE_BUCKET}/${fileName}`;
+
+        uploadedImageUrls.push(publicUrl);
+    }
+
+    return uploadedImageUrls;
+}
+
+
+
 
     return {
         addProduct,
-        getProducts
+        getProducts,
+      uploadImages
     };
 
 })();
@@ -197,19 +246,26 @@ const SellController = (() => {
 
 
     function resetForm() {
-        sellForm.reset();
-        imagePreview.replaceChildren();
-    }
+    sellForm.reset();
 
+    imagePreview.querySelectorAll("img").forEach((image) => {
+        if (image.src.startsWith("blob:")) {
+            URL.revokeObjectURL(image.src);
+        }
+    });
+
+    imagePreview.replaceChildren();
+}
 
     function openModal() {
-        sellModal.style.display = "flex";
+         sellModal.style.display = "flex";
     }
 
 
     function closeModal() {
         sellModal.style.display = "none";
         resetForm();
+    
     }
 
 
@@ -256,20 +312,21 @@ const SellController = (() => {
 
             removeButton.appendChild(closeIcon);
 
-            removeButton.addEventListener("click", () => {
+           removeButton.addEventListener("click", () => {
+    URL.revokeObjectURL(image.src);
 
-                files.splice(index, 1);
+    files.splice(index, 1);
 
-                const dataTransfer = new DataTransfer();
+    const dataTransfer = new DataTransfer();
 
-                files.forEach((file) => {
-                    dataTransfer.items.add(file);
-                });
+    files.forEach((file) => {
+        dataTransfer.items.add(file);
+    });
 
-                productImages.files = dataTransfer.files;
+    productImages.files = dataTransfer.files;
 
-                previewItem.remove();
-            });
+    previewItem.remove();
+});
 
             previewItem.appendChild(image);
             previewItem.appendChild(removeButton);
@@ -291,11 +348,10 @@ sellForm.addEventListener("submit", async (e) => {
     const productQuantity = document.querySelector("#product-quantity").value;
     const productCategory = document.querySelector("#product-category").value;
     const productLocation = document.querySelector("#product-location").value;
-    const productFiles = document.querySelector("#product-images").files;
+    
+const productFiles = Array.from(productImages.files);
 
-    const imageData = Array.from(productFiles).map((file) => {
-        return URL.createObjectURL(file);
-    });
+const imageData = await productManager.uploadProductImages(productFiles);
 
     const product = new Product(
         productName,
@@ -318,7 +374,7 @@ sellForm.addEventListener("submit", async (e) => {
 
 } catch (error) {
     console.error("Failed to save product:", error);
-    alert("Unable to list your product. Please try again.");
+    alert(error.message);
 }
 });
 
@@ -350,8 +406,14 @@ const DisplayController = (() => {
             productImage.classList.add("product-image");
 
             const image = document.createElement("img");
-            image.src = product.images[0];
+           
             image.alt = product.name;
+
+            if(Array.isArray(product.images) && product.images.length > 0){
+                image.src = product.images[0];
+            }else{
+                image.src = "assets/placeholder.png";
+            }
 
             const wishlistButton = document.createElement("button");
             wishlistButton.classList.add("wishlist-btn");
@@ -494,15 +556,23 @@ const ProductDetailController = (() => {
 
         console.log("Product ID:", productId);
 
-        const product = await productManager.getProductById(productId);
-        console.log("Product:", product);
+     let product;
+     try{
+         product = await productManager.getProductById(productId);
 
+        console.log("Product:", product);
+     
         if(!product){
-            console.error("Product not found:", productId);
+                console.error("Product not found:", productId);
             return;
         }
+     }catch(error){
+        console.error("Failed to load product details:", error);
+        return;
 
+     }
 productDetailContent.replaceChildren();
+    
 
 const productName = document.createElement("h2");
 productName.textContent = product.name;
@@ -521,10 +591,16 @@ productDetailContent.appendChild(productPrice);
 
 
 const productImage = document.createElement("img");
-productImage.src = product.images[0];
-productImage.alt = product.name;
-productDetailContent.appendChild(productImage);
 
+productImage.alt = product.name;
+
+if(Array.isArray(product.images) && product.images.length > 0){
+    productImage.src = product.images[0];
+}else{
+    productImage.src = "assets/placeholder.png";
+}
+
+productDetailContent.appendChild(productImage);
 
 const productCategory = document.createElement("p");
 productCategory.textContent = product.category;
@@ -590,36 +666,36 @@ const CategoryController = (() => {
     const categoryCards = document.querySelectorAll(".category-card");
     const viewAllBtn =document.getElementById("view-all-products"); 
 
-    categoryCards.forEach((card) => {
-        card.addEventListener("click", (e) => {
+    categoryCards.forEach((card)  => {
+        card.addEventListener("click", async (e) => {
             e.preventDefault();
 
             const category = card.dataset.category;
+            try{
+                const products = await productManager.getProductsByCategory(category);
 
-            const products = productManager.getProductsByCategory(category);
-
-            DisplayController.renderProducts(products);
-
+                DisplayController.renderProducts(products);
+            }catch(error){
+                console.error("Failed to filter products by category:", error);
+            }
+            
         });
 
 
     });
 
-            viewAllBtn.addEventListener("click", (e) => {
+            viewAllBtn.addEventListener("click", async (e) => {
 
     e.preventDefault();
 
-    const products = productManager.getProducts();
+   try {
+            const products = await productManager.getProducts();
 
-     if (products.length === productGrid.children.length) {
-        return;
-    }
-
-    DisplayController.renderProducts(products);
-});
-
-
- 
+            DisplayController.renderProducts(products);
+        } catch (error) {
+            console.error("Failed to load all products:", error);
+        }
+    });
 
 })();
 
