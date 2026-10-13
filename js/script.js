@@ -207,15 +207,25 @@ const WishlistStore = (() =>{
 })();
 
 const CartStore = (() => {
+let cart =JSON.parse(localStorage.getItem("cart")) || [];
 
-    let cart = [];
+
+   function saveCartStore(){
+    localStorage.setItem("cart", JSON.stringify(cart));
+   }
 
     function addProduct(productId) {
+        if(cart.includes(productId)){
+            return;
+        }
+
         cart.push(productId);
+        saveCartStore();
     }
 
     function removeProduct(productId) {
         cart = cart.filter((id) => id !== productId);
+        saveCartStore();
     }
 
     function getCart() {
@@ -757,3 +767,37 @@ const WishlistController = (() =>{
     });
 })();
 
+const CartController = (() =>{
+ const cartstore = document.querySelector("#cart-link"); 
+
+ cartstore.addEventListener("click", async (e)=>{
+         e.preventDefault();
+
+         try{
+            const products = await productManager.getProducts();
+            const cartIds = CartStore.getCart();
+
+            const cartProducts = products.filter((product) =>
+            cartIds.includes(product.id)
+        );
+
+        if (cartProducts.length === 0){
+            const productGrid = document.querySelector(".product-grid");
+
+            productGrid.replaceChildren();
+
+            const emptyMessage = document.createElement("p");
+            emptyMessage.textContent = "Add Product to Cart to complete Order.";
+
+            productGrid.appendChild(emptyMessage);
+        } else{
+            DisplayController.renderProducts(cartProducts);
+        }
+
+
+         }catch(error){
+            console.error("Failed to load cart:", error);
+         }
+    });
+
+})();
