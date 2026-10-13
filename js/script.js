@@ -395,8 +395,8 @@ const SellController = (() => {
 
 
 
-    sellForm.addEventListener("submit", async (e) => {
 
+    sellForm.addEventListener("submit", async (e) => {
 
     e.preventDefault();
 
@@ -434,12 +434,12 @@ const imageData = await productManager.uploadProductImages(productFiles);
     console.error("Failed to save product:", error);
     alert(error.message);
 }
+closeModal
 });
 
 
 
     return {
-        closeModal
     };
 
 })();
