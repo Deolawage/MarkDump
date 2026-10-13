@@ -163,38 +163,48 @@ const ProductStore = (() => {
 
 })();
 
-const WishlistStore = (()=>{
 
-    let wishlist = [];
 
-    function addProduct(productId) {
+const WishlistStore = (() =>{
+    let wishlist =JSON.parse(localStorage.getItem("wishlist")) || [];
+
+    function saveWishList() {
+        localStorage.setItem("wishlist", JSON.stringify(wishlist));
+    }
+
+    function addProduct(productId){
+        if(wishlist.includes(productId)){
+            return;
+        }
+
         wishlist.push(productId);
+        saveWishList();
     }
 
-    function removeProduct(productId) {
+
+    function removeProduct(productId){
         wishlist = wishlist.filter((id) => id !== productId);
+        saveWishList();
     }
 
-    function isInWishlist(productId) {
+    function isInWishlist(productId){
         return wishlist.includes(productId);
     }
-    
 
-
-
-    function getWishlist() {
+    function getWishlist(){
         return wishlist;
     }
 
     return{
+        saveWishList,
         addProduct,
         removeProduct,
         isInWishlist,
         getWishlist
-    }
-    
-})();
 
+    };
+
+})();
 
 const CartStore = (() => {
 
@@ -709,3 +719,41 @@ const CategoryController = (() => {
         console.error("Failed to load product");
     }
 })();
+
+
+
+
+const WishlistController = (() =>{
+    const wishlist = document.getElementById("wishlist-link");
+
+    wishlist.addEventListener("click", async (e)=>{
+         e.preventDefault();
+
+         try{
+            const products = await productManager.getProducts();
+            const wishlistIds = WishlistStore.getWishlist();
+
+            const wishlistProducts = products.filter((product) =>
+            wishlistIds.includes(product.id)
+        );
+
+        if (wishlistProducts.length === 0){
+            const productGrid = document.querySelector(".product-grid");
+
+            productGrid.replaceChildren();
+
+            const emptyMessage = document.createElement("p");
+            emptyMessage.textContent = "Your wishlist is empty. Save products you love, and they'll appear here.";
+
+            productGrid.appendChild(emptyMessage);
+        } else{
+            DisplayController.renderProducts(wishlistProducts);
+        }
+
+
+         }catch(error){
+            console.error("Failed to load wishlist:", error);
+         }
+    });
+})();
+
